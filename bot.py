@@ -4,6 +4,8 @@ import requests
 import socket
 import os
 
+from keep_alive import keep_alive  # <-- AJOUT
+
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
 @bot.event
@@ -109,4 +111,7 @@ async def host(ctx, site):
 # ============================
 #         TOKEN DU BOT
 # ============================
+
+keep_alive()  # <-- AJOUT ESSENTIEL
+
 bot.run(os.getenv("TOKEN"))
