@@ -114,6 +114,70 @@ async def host(interaction: discord.Interaction, site: str):
         await interaction.response.send_message("⚠️ Une erreur est survenue.")
 
 # ============================
+#        /userinfo
+# ============================
+@bot.tree.command(name="userinfo", description="Affiche les informations d'un utilisateur")
+async def userinfo(interaction: discord.Interaction, membre: discord.Member = None):
+    membre = membre or interaction.user
+
+    roles = [role.mention for role in membre.roles if role.name != "@everyone"]
+    roles_text = ", ".join(roles) if roles else "Aucun rôle"
+
+    embed = discord.Embed(
+        title=f"Informations sur {membre.name}",
+        color=discord.Color.blue()
+    )
+
+    embed.set_thumbnail(url=membre.avatar.url if membre.avatar else membre.default_avatar.url)
+    embed.add_field(name="🆔 ID", value=membre.id, inline=False)
+    embed.add_field(name="📅 Compte créé le", value=membre.created_at.strftime("%d/%m/%Y"), inline=True)
+    embed.add_field(name="📥 Arrivé sur le serveur le", value=membre.joined_at.strftime("%d/%m/%Y"), inline=True)
+    embed.add_field(name="🎭 Rôles", value=roles_text, inline=False)
+
+    await interaction.response.send_message(embed=embed)
+
+# ============================
+#        /define (FR/EN)
+# ============================
+@bot.tree.command(name="define", description="Donne la définition d'un mot en anglais ou en français")
+@app_commands.describe(
+    mot="Le mot à définir",
+    langue="Choisir la langue (anglais par défaut)"
+)
+@app_commands.choices(langue=[
+    app_commands.Choice(name="Anglais", value="en"),
+    app_commands.Choice(name="Français", value="fr")
+])
+async def define(interaction: discord.Interaction, mot: str, langue: app_commands.Choice[str] = None):
+
+    langue_code = langue.value if langue else "en"
+
+    try:
+        if langue_code == "en":
+            url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{mot}"
+        else:
+            url = f"https://api.dictionaryapi.dev/api/v2/entries/fr/{mot}"
+
+        data = requests.get(url).json()
+
+        if isinstance(data, dict) and data.get("title") == "No Definitions Found":
+            await interaction.response.send_message(f"❌ Aucune définition trouvée pour **{mot}**.")
+            return
+
+        definition = data[0]["meanings"][0]["definitions"][0]["definition"]
+
+        embed = discord.Embed(
+            title=f"📘 Définition ({langue_code.upper()}) : {mot}",
+            description=definition,
+            color=discord.Color.green() if langue_code == "fr" else discord.Color.blue()
+        )
+
+        await interaction.response.send_message(embed=embed)
+
+    except Exception:
+        await interaction.response.send_message("⚠️ Une erreur est survenue lors de la recherche du mot.")
+
+# ============================
 #         TOKEN + KEEP ALIVE
 # ============================
 
