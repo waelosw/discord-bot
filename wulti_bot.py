@@ -1,7 +1,8 @@
 import discord
 from discord.ext import commands
 import requests
-import socket  # ← nécessaire pour !host
+import socket
+import os
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
@@ -76,10 +77,8 @@ async def geo(ctx, adresse_ip):
 @bot.command()
 async def host(ctx, site):
     try:
-        # Résolution DNS → obtenir l'IP du site
         ip = socket.gethostbyname(site)
 
-        # API pour obtenir les infos de l'IP
         url = f"http://ip-api.com/json/{ip}?fields=66846719"
         data = requests.get(url).json()
 
@@ -110,4 +109,4 @@ async def host(ctx, site):
 # ============================
 #         TOKEN DU BOT
 # ============================
-bot.run("MTQ3OTgxMDMzNTE1MzE5MzE0Ng.GLkdHK.UdhiBTxVxNeEh7prrOB0XCJj---kd-4xU0JG-8")
+bot.run(os.getenv("TOKEN"))
