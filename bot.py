@@ -3,12 +3,22 @@ from discord.ext import commands
 import requests
 import socket
 import os
+import asyncio  # ← nécessaire pour le ping toutes les 5 min
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+
+# ============================
+#       CONFIG BOT
+# ============================
+# ID du salon où envoyer le ping automatique
+AUTO_CHANNEL_ID = 1479973171653251243  # remplace par ton salon
 
 @bot.event
 async def on_ready():
     print(f"WULTI Bot connecté en tant que {bot.user}")
+    channel = bot.get_channel(AUTO_CHANNEL_ID)
+    if channel:
+        await channel.send("Salut ! Le bot est maintenant en ligne !")
 
 # ============================
 #        COMMANDE !ip
@@ -32,7 +42,6 @@ async def ip(ctx, adresse_ip):
             f"• Latitude : {data.get('lat', 'N/A')}\n"
             f"• Longitude : {data.get('lon', 'N/A')}\n"
         )
-
         await ctx.send(message)
 
     except Exception:
@@ -65,7 +74,6 @@ async def geo(ctx, adresse_ip):
             f"• Latitude : {data.get('lat', 'N/A')}\n"
             f"• Longitude : {data.get('lon', 'N/A')}\n"
         )
-
         await ctx.send(message)
 
     except Exception:
@@ -77,9 +85,8 @@ async def geo(ctx, adresse_ip):
 @bot.command()
 async def host(ctx, site):
     try:
-        ip = socket.gethostbyname(site)
-
-        url = f"http://ip-api.com/json/{ip}?fields=66846719"
+        ip_addr = socket.gethostbyname(site)
+        url = f"http://ip-api.com/json/{ip_addr}?fields=66846719"
         data = requests.get(url).json()
 
         if data["status"] == "fail":
@@ -88,7 +95,7 @@ async def host(ctx, site):
 
         message = (
             f"🖥️ **Informations sur l'hôte : {site}**\n"
-            f"• IP : {ip}\n"
+            f"• IP : {ip_addr}\n"
             f"• Pays : {data.get('country', 'N/A')}\n"
             f"• Région : {data.get('regionName', 'N/A')}\n"
             f"• Ville : {data.get('city', 'N/A')}\n"
@@ -98,7 +105,6 @@ async def host(ctx, site):
             f"• Latitude : {data.get('lat', 'N/A')}\n"
             f"• Longitude : {data.get('lon', 'N/A')}\n"
         )
-
         await ctx.send(message)
 
     except socket.gaierror:
@@ -107,6 +113,19 @@ async def host(ctx, site):
         await ctx.send("⚠️ Une erreur est survenue.")
 
 # ============================
-#         TOKEN DU BOT
+#       TACHE PING 5 MINUTES
+# ============================
+async def message_periodique():
+    await bot.wait_until_ready()
+    channel = bot.get_channel(AUTO_CHANNEL_ID)
+    while not bot.is_closed():
+        if channel:
+            await channel.send("🔔 message automatique toutes les 5 minutes !")
+        await asyncio.sleep(300)  # 300 secondes = 5 minutes
+
+bot.loop.create_task(message_periodique())
+
+# ============================
+#       LANCEMENT DU BOT
 # ============================
 bot.run(os.getenv("TOKEN"))
