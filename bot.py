@@ -3,7 +3,7 @@ from discord.ext import commands
 import requests
 import socket
 import os
-import asyncio  # ← nécessaire pour le ping toutes les 5 min
+import asyncio  # nécessaire pour le ping toutes les 5 min
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
@@ -11,14 +11,17 @@ bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 #       CONFIG BOT
 # ============================
 # ID du salon où envoyer le ping automatique
-AUTO_CHANNEL_ID = 1479973171653251243  # remplace par ton salon
+AUTO_CHANNEL_ID = 1479973171653251243  # ton salon Discord
 
 @bot.event
 async def on_ready():
     print(f"WULTI Bot connecté en tant que {bot.user}")
-    channel = bot.get_channel(AUTO_CHANNEL_ID)
-    if channel:
-        await channel.send("Salut ! Le bot est maintenant en ligne !")
+    try:
+        channel = await bot.fetch_channel(AUTO_CHANNEL_ID)
+        if channel:
+            await channel.send("Salut ! Le bot est maintenant en ligne !")
+    except Exception as e:
+        print(f"Erreur en envoyant le message de démarrage : {e}")
 
 # ============================
 #        COMMANDE !ip
@@ -117,11 +120,14 @@ async def host(ctx, site):
 # ============================
 async def message_periodique():
     await bot.wait_until_ready()
-    channel = bot.get_channel(AUTO_CHANNEL_ID)
     while not bot.is_closed():
-        if channel:
-            await channel.send("🔔 message automatique toutes les 5 minutes !")
-        await asyncio.sleep(300)  # 300 secondes = 5 minutes
+        try:
+            channel = await bot.fetch_channel(AUTO_CHANNEL_ID)
+            if channel:
+                await channel.send("🔔 Message automatique toutes les 5 minutes !")
+        except Exception as e:
+            print(f"Erreur en envoyant le message automatique : {e}")
+        await asyncio.sleep(300)  # 5 minutes
 
 bot.loop.create_task(message_periodique())
 
