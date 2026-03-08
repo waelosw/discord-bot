@@ -1,28 +1,34 @@
 import discord
-from discord.ext import commands
+from discord import app_commands
 import requests
 import socket
 import os
 
-from keep_alive import keep_alive  # <-- AJOUT
+from keep_alive import keep_alive
 
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+class WultiBot(discord.Client):
+    def __init__(self):
+        super().__init__(intents=discord.Intents.all())
+        self.tree = app_commands.CommandTree(self)
 
-@bot.event
-async def on_ready():
-    print(f"WULTI Bot connecté en tant que {bot.user}")
+    async def on_ready(self):
+        print(f"WULTI Bot connecté en tant que {self.user}")
+        await self.tree.sync()
+        print("Slash commands synchronisées.")
+
+bot = WultiBot()
 
 # ============================
-#        COMMANDE !ip
+#        /ip
 # ============================
-@bot.command()
-async def ip(ctx, adresse_ip):
+@bot.tree.command(name="ip", description="Analyse une adresse IP")
+async def ip(interaction: discord.Interaction, adresse_ip: str):
     try:
         url = f"http://ip-api.com/json/{adresse_ip}"
         data = requests.get(url).json()
 
         if data["status"] == "fail":
-            await ctx.send("❌ IP invalide ou introuvable.")
+            await interaction.response.send_message("❌ IP invalide ou introuvable.")
             return
 
         message = (
@@ -35,22 +41,22 @@ async def ip(ctx, adresse_ip):
             f"• Longitude : {data.get('lon', 'N/A')}\n"
         )
 
-        await ctx.send(message)
+        await interaction.response.send_message(message)
 
-    except Exception:
-        await ctx.send("⚠️ Une erreur est survenue.")
+    except:
+        await interaction.response.send_message("⚠️ Une erreur est survenue.")
 
 # ============================
-#       COMMANDE !geo
+#        /geo
 # ============================
-@bot.command()
-async def geo(ctx, adresse_ip):
+@bot.tree.command(name="geo", description="Géolocalisation détaillée d'une IP")
+async def geo(interaction: discord.Interaction, adresse_ip: str):
     try:
         url = f"http://ip-api.com/json/{adresse_ip}?fields=66846719"
         data = requests.get(url).json()
 
         if data["status"] == "fail":
-            await ctx.send("❌ IP invalide ou introuvable.")
+            await interaction.response.send_message("❌ IP invalide ou introuvable.")
             return
 
         message = (
@@ -68,24 +74,23 @@ async def geo(ctx, adresse_ip):
             f"• Longitude : {data.get('lon', 'N/A')}\n"
         )
 
-        await ctx.send(message)
+        await interaction.response.send_message(message)
 
-    except Exception:
-        await ctx.send("⚠️ Une erreur est survenue.")
+    except:
+        await interaction.response.send_message("⚠️ Une erreur est survenue.")
 
 # ============================
-#       COMMANDE !host
+#        /host
 # ============================
-@bot.command()
-async def host(ctx, site):
+@bot.tree.command(name="host", description="Analyse un site web et récupère son IP")
+async def host(interaction: discord.Interaction, site: str):
     try:
         ip = socket.gethostbyname(site)
-
         url = f"http://ip-api.com/json/{ip}?fields=66846719"
         data = requests.get(url).json()
 
         if data["status"] == "fail":
-            await ctx.send("❌ Impossible d'obtenir les informations de cet hôte.")
+            await interaction.response.send_message("❌ Impossible d'obtenir les informations de cet hôte.")
             return
 
         message = (
@@ -101,17 +106,16 @@ async def host(ctx, site):
             f"• Longitude : {data.get('lon', 'N/A')}\n"
         )
 
-        await ctx.send(message)
+        await interaction.response.send_message(message)
 
     except socket.gaierror:
-        await ctx.send("❌ Site invalide ou introuvable.")
-    except Exception:
-        await ctx.send("⚠️ Une erreur est survenue.")
+        await interaction.response.send_message("❌ Site invalide ou introuvable.")
+    except:
+        await interaction.response.send_message("⚠️ Une erreur est survenue.")
 
 # ============================
-#         TOKEN DU BOT
+#         TOKEN + KEEP ALIVE
 # ============================
 
-keep_alive()  # <-- AJOUT ESSENTIEL
-
+keep_alive()
 bot.run(os.getenv("TOKEN"))
